@@ -1,4 +1,4 @@
-from flask import Flask,url_for,render_template,flash,session,redirect,request
+from flask import Flask, url_for, render_template, flash, session, redirect, request
 import mysql.connector
 import pandas as pd
 import random
@@ -9,52 +9,67 @@ import smtplib
 import hashlib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-app=Flask(__name__)
+
+app = Flask(__name__)
 app.config['SECRET_KEY'] = 'the random string'
-mydb = mysql.connector.connect(host="localhost", user="root", passwd="", database="smart_tender")
+# mydb = mysql.connector.connect(host="localhost", user="root", passwd="", database="smart_tender")
+mydb = mysql.connector.connect(user="tarun@smart-tender", password="test@123",
+                               host="smart-tender.mysql.database.azure.com",
+                               port=3306, database="smart_tender")
 cursor = mydb.cursor()
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
 @app.route('/mansonry')
 def mansonry():
     return render_template('masonry.html')
+
+
 @app.route('/grid')
 def grid():
     return render_template('grid.html')
+
+
 @app.route('/about')
 def about():
     return render_template('about.html')
+
+
 @app.route('/tender')
 def tender():
     a = random.randint(0, 9)
     b = random.randint(0, 9)
-    c=a+b
+    c = a + b
     print(a)
-    return render_template('tender.html',a=a,b=b,c=c)
+    return render_template('tender.html', a=a, b=b, c=c)
 
-@app.route('/tenderback',methods = ["POST"])
+
+@app.route('/tenderback', methods=["POST"])
 def tenderback():
     print("*******************")
-    if request.method=='POST':
-        name=request.form['name']
-        email=request.form['email']
-        pwd=request.form['pwd']
-        cpwd=request.form['cpwd']
-        pno=request.form['pno']
-        addr=request.form['addr']
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        pwd = request.form['pwd']
+        cpwd = request.form['cpwd']
+        pno = request.form['pno']
+        addr = request.form['addr']
         print("&&&&&&&&&")
         sql = "select * from tenders"
         result = pd.read_sql_query(sql, mydb)
         email1 = result['email'].values
         print(email1)
         if email in email1:
-            flash("email already existed","warning")
+            flash("email already existed", "warning")
             return render_template('tender.html')
         if (pwd == cpwd):
             sql = "INSERT INTO tenders (name,email,pwd,addr,pno) VALUES (%s,%s,%s,%s,%s)"
             val = (name, email, pwd, addr, pno)
-            print("val",val)
+            print("val", val)
             cursor.execute(sql, val)
             mydb.commit()
             flash("Successfully Registered", "warning")
@@ -65,7 +80,8 @@ def tenderback():
 
     return render_template('tender.html')
 
-@app.route('/loginback',methods=['POST', 'GET'])
+
+@app.route('/loginback', methods=['POST', 'GET'])
 def loginback():
     if request.method == "POST":
 
@@ -85,7 +101,7 @@ def loginback():
         print(name)
         session['fname'] = results[0][1]
         session['email'] = email
-        if(capt==c):
+        if (capt == c):
             if len(results) > 0:
                 flash("Welcome to website", "primary")
                 return render_template('tenderhome.html', msg=results[0][1])
@@ -104,30 +120,32 @@ def loginback():
 def tenderhome():
     return render_template('tenderhome.html')
 
+
 @app.route('/notification')
 def notification():
     return render_template('notification.html')
 
-@app.route('/notiback', methods=['POST','GET'])
+
+@app.route('/notiback', methods=['POST', 'GET'])
 def notiback():
-    if request.method=='POST':
+    if request.method == 'POST':
         now = datetime.now()
-        email=session.get('email')
+        email = session.get('email')
         currentDay = datetime.now().strftime('%Y-%m-%d')
         print(currentDay)
-        edate=request.form['edate']
-        obj=request.form['obj']
-        cost=request.form['cost']
+        edate = request.form['edate']
+        obj = request.form['obj']
+        cost = request.form['cost']
         print("***************")
         print(edate)
         if currentDay < edate:
-            sql="insert into notifications(email,obj,cost,sdate,edate) values(%s,%s,%s,%s,%s)"
-            val=(email,obj,cost,currentDay,edate)
-            cursor.execute(sql,val)
+            sql = "insert into notifications(email,obj,cost,sdate,edate) values(%s,%s,%s,%s,%s)"
+            val = (email, obj, cost, currentDay, edate)
+            cursor.execute(sql, val)
             mydb.commit()
-            flash("Notification submitted","success")
+            flash("Notification submitted", "success")
         else:
-            flash("Previous data not allowed so please select valid data","danger")
+            flash("Previous data not allowed so please select valid data", "danger")
             return render_template("notification.html")
         return redirect('notification')
 
@@ -137,24 +155,23 @@ def bid():
     return render_template('bid.html')
 
 
-
-@app.route('/bidback',methods = ["POST"])
+@app.route('/bidback', methods=["POST"])
 def bidback():
     print("*******************")
-    if request.method=='POST':
-        name=request.form['name']
-        email=request.form['email']
-        pwd=request.form['pwd']
-        cpwd=request.form['cpwd']
-        pno=request.form['pno']
-        addr=request.form['addr']
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        pwd = request.form['pwd']
+        cpwd = request.form['cpwd']
+        pno = request.form['pno']
+        addr = request.form['addr']
         print("&&&&&&&&&")
         sql = "select * from tenders"
         result = pd.read_sql_query(sql, mydb)
         email1 = result['email'].values
         print(email1)
         if email in email1:
-            flash("email already existed","warning")
+            flash("email already existed", "warning")
             return render_template('bid.html')
         if (pwd == cpwd):
             sql = "INSERT INTO bidders (name,email,pwd,addr,pno) VALUES (%s,%s,%s,%s,%s)"
@@ -169,7 +186,8 @@ def bidback():
 
     return render_template('bid.html')
 
-@app.route('/bidlog',methods=['POST', 'GET'])
+
+@app.route('/bidlog', methods=['POST', 'GET'])
 def bidlog():
     if request.method == "POST":
 
@@ -198,30 +216,35 @@ def bidlog():
 
     return render_template('bid.html')
 
+
 @app.route('/bidhome')
 def bidhome():
     return render_template('bidhome.html')
+
+
 @app.route('/vnot')
 def vnot():
     today = date.today()
     yesterday = today - timedelta(days=1)
     if today > yesterday:
-        sql ="select * from notifications"
+        sql = "select * from notifications"
         x = pd.read_sql_query(sql, mydb)
         return render_template("vnot.html", cal_name=x.columns.values, row_val=x.values.tolist())
     else:
-        flash("No tenders are available","warning")
+        flash("No tenders are available", "warning")
         return render_template("vnot.html")
     return render_template("vnot.html")
 
-@app.route('/maketender/<s>/<s1>/<s2>/<s3>/<s4>/<s5>')
-def maketender(s=0,s1='',s2='',s3='',s4='',s5=''):
-    print(s)
-    return render_template('/maketender.html', a=s,s1=s1,s2=s2,s3=s3,s4=s4,s5=s5)
 
-@app.route('/maketenderback', methods=['POST','GET'])
+@app.route('/maketender/<s>/<s1>/<s2>/<s3>/<s4>/<s5>')
+def maketender(s=0, s1='', s2='', s3='', s4='', s5=''):
+    print(s)
+    return render_template('/maketender.html', a=s, s1=s1, s2=s2, s3=s3, s4=s4, s5=s5)
+
+
+@app.route('/maketenderback', methods=['POST', 'GET'])
 def maketenderback():
-    if request.method=='POST':
+    if request.method == 'POST':
         a1 = request.form['a']
         s1 = request.form['s1']
         s2 = request.form['s2']
@@ -230,14 +253,14 @@ def maketenderback():
         s5 = request.form['s5']
         pan = request.form['pan']
         adhar = request.form['adhar']
-        file =request.form['file']
+        file = request.form['file']
 
         dd = "text_files/" + file
         print(dd)
         f = open(dd, "r")
         data = f.read()
         now = datetime.now()
-        a=random.randint(500, 50000)
+        a = random.randint(500, 50000)
         email = session.get('email')
 
         datalen = int(len(data) / 2)
@@ -249,7 +272,7 @@ def maketenderback():
         for i in range(0, 2):
             if i == 0:
                 a = data[g: datalen:1]
-                #a=a.decode('utf-8')
+                # a=a.decode('utf-8')
                 print(a)
                 result = hashlib.sha1(a.encode())
                 hash1 = result.hexdigest()
@@ -277,10 +300,10 @@ def maketenderback():
         print(hash2)
         currentDay = datetime.now().strftime('%Y-%m-%d')
         t1 = datetime.now().strftime('%H:%M:%S')
-        sq="select * from  tender_files where tid='"+a1+"' and email='"+email+"'"
-        xy=pd.read_sql_query(sq,mydb)
-        t_id=xy['tid'].values
-        b_email=xy['email'].values
+        sq = "select * from  tender_files where tid='" + a1 + "' and email='" + email + "'"
+        xy = pd.read_sql_query(sq, mydb)
+        t_id = xy['tid'].values
+        b_email = xy['email'].values
         print(t_id)
         print(b_email)
 
@@ -289,7 +312,7 @@ def maketenderback():
             return render_template('vnot.html')
         else:
             sql = "INSERT INTO tender_files (tid,temail,obj,cost,sdate,edate,email,pan,adhar,file,hash1,hash2,date,time1) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,AES_ENCRYPT(%s,'lakshmi'),%s,%s,%s,%s)"
-            val = (a1, s1,s2,s3,s4,s5,email,pan,adhar,data, hash1, hash2, currentDay, t1)
+            val = (a1, s1, s2, s3, s4, s5, email, pan, adhar, data, hash1, hash2, currentDay, t1)
             cursor.execute(sql, val)
             mydb.commit()
             sql1 = "select * from tender_files where time1='%s' " % (t1)
@@ -311,58 +334,62 @@ def maketenderback():
             return render_template("maketender1.html", col_name=x.columns.values, row_val=x.values.tolist())
     return render_template('vnot.html')
 
+
 @app.route('/viewnot')
 def viewnot():
-    email=session.get('email')
+    email = session.get('email')
     today = date.today()
     yesterday = today - timedelta(days=1)
     if today > yesterday:
-        sql ="select * from notifications where email='%s'" %(email)
-        print("sql",sql)
+        sql = "select * from notifications where email='%s'" % (email)
+        print("sql", sql)
         x = pd.read_sql_query(sql, mydb)
         x = x.drop(['email'], axis=1)
         return render_template("viewnot.html", cal_name=x.columns.values, row_val=x.values.tolist())
     else:
-        flash("No tenders are available","warning")
+        flash("No tenders are available", "warning")
         return render_template("viewnot.html")
     return render_template("viewnot.html")
 
 
 @app.route('/update/<s>/<s1>/<s2>/<s3>/<s4>')
-def update(s=0,s1='',s2='',s3='',s4=''):
+def update(s=0, s1='', s2='', s3='', s4=''):
     print(s)
-    return render_template('update.html', a=s,s1=s1,s2=s2,s3=s3,s4=s4)
+    return render_template('update.html', a=s, s1=s1, s2=s2, s3=s3, s4=s4)
 
-@app.route("/upback", methods=['POST',"GET"])
+
+@app.route("/upback", methods=['POST', "GET"])
 def upback():
-    if request.method=="POST":
-        a=request.form['id']
-        b=request.form['obj']
-        c=request.form['cost']
-        d=request.form['sdate']
-        e=request.form['edate']
+    if request.method == "POST":
+        a = request.form['id']
+        b = request.form['obj']
+        c = request.form['cost']
+        d = request.form['sdate']
+        e = request.form['edate']
         sql = "update notifications set obj='%s',cost='%s',sdate='%s',edate='%s' where id='%s' " % (b, c, d, e, a)
         cursor.execute(sql)
         mydb.commit()
         flash("Successfully data updated", "success")
         return redirect(url_for('viewnot'))
 
+
 @app.route('/delete/<s>')
 def delete(s=0):
-    x=s
-    sql="delete from notifications where id='%s'" %(x)
+    x = s
+    sql = "delete from notifications where id='%s'" % (x)
     cursor.execute(sql)
     mydb.commit()
     flash("Successfully data deleted", "success")
     return redirect(url_for('viewnot'))
 
+
 @app.route('/viewbid')
 def viewbid():
     today = date.today()
     yesterday = today - timedelta(days=1)
-    email=session.get('email')
+    email = session.get('email')
     if today > yesterday:
-        sql ="select * from tender_files where temail='%s'"%(email)
+        sql = "select * from tender_files where temail='%s'" % (email)
         x = pd.read_sql_query(sql, mydb)
         x = x.drop(['tid'], axis=1)
         x = x.drop(['time1'], axis=1)
@@ -372,18 +399,20 @@ def viewbid():
         x = x.drop(['edate'], axis=1)
         x = x.drop(['obj'], axis=1)
         x = x.drop(['temail'], axis=1)
-        print("x",x)
+        print("x", x)
         return render_template("viewbid.html", cal_name=x.columns.values, row_val=x.values.tolist())
     else:
-        flash("No bidders are available","warning")
+        flash("No bidders are available", "warning")
         return render_template("viewbid.html")
 
-@app.route('/vbidinfo/<s>/<s1>/<s2>')
-def vbidinfo(s=0,s1='',s2=''):
-    print(s)
-    return render_template('vbidinfo.html', a=s,s1=s1,s2=s2)
 
-@app.route("/down",methods=['POST','GET'])
+@app.route('/vbidinfo/<s>/<s1>/<s2>')
+def vbidinfo(s=0, s1='', s2=''):
+    print(s)
+    return render_template('vbidinfo.html', a=s, s1=s1, s2=s2)
+
+
+@app.route("/down", methods=['POST', 'GET'])
 def down():
     if request.method == 'POST':
         hash1 = request.form['s1']
@@ -391,36 +420,37 @@ def down():
         hash2 = request.form['s2']
 
         # sql = "select count(*),CONCAT(block1,block2,'') from reports where hash1='"+hash1+"' and hash2='"+hash2+"' and id='"+id+"' "
-        sql= "select count(*), aes_decrypt(file, 'lakshmi') from tender_files where hash1 = '"+hash1+"' and hash2 = '"+hash2+"' and id='"+id+"'"
+        sql = "select count(*), aes_decrypt(file, 'lakshmi') from tender_files where hash1 = '" + hash1 + "' and hash2 = '" + hash2 + "' and id='" + id + "'"
         x = pd.read_sql_query(sql, mydb)
-        count=x.values[0][0]
+        count = x.values[0][0]
         print(count)
-        asss=x.values[0][1]
-        asss=asss.decode('utf-8')
+        asss = x.values[0][1]
+        asss = asss.decode('utf-8')
 
         print("^^^^^^^^^^^^^")
-        if count==0:
-            flash("Something wrong tray again","danger")
+        if count == 0:
+            flash("Something wrong tray again", "danger")
             return render_template("viewbid.html")
-        if count==1:
+        if count == 1:
             return render_template("downfile.html", msg=asss)
 
     return render_template("viewbid.html")
 
+
 @app.route('/finalised/<s>/<s1>')
-def finalised(s=0,s1=''):
-    email=session.get('email')
-    sql="select count(*) from tender_files where temail='%s' and email='%s'" %(email,s1)
+def finalised(s=0, s1=''):
+    email = session.get('email')
+    sql = "select count(*) from tender_files where temail='%s' and email='%s'" % (email, s1)
     x = pd.read_sql_query(sql, mydb)
     count = x.values[0][0]
     print(count)
     print(count)
-    if count>=1:
+    if count >= 1:
         msg = 'Thanks for choosing online smart tender.'
         otp = "Congratuaations for woning this tender. "
         t = 'Regards,'
         t1 = 'Tender Officer.'
-        mail_content = msg + '\n' + otp +'\n' + '\n' + t + '\n' + t1
+        mail_content = msg + '\n' + otp + '\n' + '\n' + t + '\n' + t1
         sender_address = 'mjaagalamarri@gmail.com'
         sender_pass = '8978328578'
         receiver_address = s1
@@ -439,22 +469,23 @@ def finalised(s=0,s1=''):
         sql = "update tender_files set status='Completed' where id='%s'" % (s)
         cursor.execute(sql, mydb)
         mydb.commit()
-        if count!=0:
-            sql = "update tender_files set status='Cancel' where temail='%s' and email != '%s'" % (email,s1)
+        if count != 0:
+            sql = "update tender_files set status='Cancel' where temail='%s' and email != '%s'" % (email, s1)
             cursor.execute(sql, mydb)
             mydb.commit()
-            flash("Opinion sended to Bidders","Success")
+            flash("Opinion sended to Bidders", "Success")
             return redirect(url_for('viewbid'))
         print("No bidders available")
         return redirect(url_for('viewbid'))
     return redirect(url_for('viewbid'))
 
+
 @app.route('/vresult')
 def vresult():
-    email=session.get("email")
+    email = session.get("email")
     print("----------")
     print(email)
-    sql="select * from tender_files where status!='pending' and temail='%s'" %(email)
+    sql = "select * from tender_files where status!='pending' and temail='%s'" % (email)
     x = pd.read_sql_query(sql, mydb)
     print(x)
     x = x.drop(['id'], axis=1)
@@ -473,5 +504,5 @@ def vresult():
     return render_template('vresult.html', cal_name=x.columns.values, row_val=x.values.tolist())
 
 
-if __name__=='__main__':
-    app.run(debug=True,port=8970)
+if __name__ == '__main__':
+    app.run(debug=True, port=8970)
